@@ -31,7 +31,7 @@ gstack goes in your home folder, not in the project — that is its supported in
 
 ```bash
 cd /path/to/your-project     # for a brand-new project: mkdir it, cd, git init
-git clone https://github.com/<you>/vidhana.git tmp-kit && cp -r tmp-kit/. . && rm -rf tmp-kit/.git tmp-kit   # or unzip the release
+git clone --depth 1 https://github.com/DDharma/vidhana.git tmp-kit && rm -rf tmp-kit/.git && cp -r tmp-kit/. . && rm -rf tmp-kit   # or unzip the release
 chmod +x .claude/hooks/*.sh tests/*.sh
 bash tests/gate-selftest.sh                  # expect "vidhana gate-selftest: 13 passed, 0 failed"
 bash tests/wiki-lint.sh                      # expect "vidhana wiki-lint: clean"

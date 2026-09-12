@@ -20,7 +20,7 @@ There is no controlled evidence that this produces better code than one careful 
 
 ```bash
 # 1. put the kit in your project (works for an empty repo too — run git init first)
-git clone https://github.com/<you>/vidhana.git tmp-kit && cp -r tmp-kit/. . && rm -rf tmp-kit/.git tmp-kit
+git clone --depth 1 https://github.com/DDharma/vidhana.git tmp-kit && rm -rf tmp-kit/.git && cp -r tmp-kit/. . && rm -rf tmp-kit
 
 # 2. install the two skill libraries (once per machine) and check the kit
 bash scripts/bootstrap.sh
