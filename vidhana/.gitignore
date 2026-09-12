@@ -1,0 +1,7 @@
+pipeline/run.log
+pipeline/.log-lines
+pipeline/TEST-LOG.md
+.claude/settings.local.json
+.claude/skills/gstack/
+node_modules/
+*.log

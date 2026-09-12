@@ -1,0 +1,61 @@
+flowchart TD
+    Q[/pipeline/queue.md<br/>next item/] --> M{type?}
+    M -->|greenfield| S1[spec · opus<br/>gstack /spec<br/>+ scaffold & tooling]
+    M -->|feature| S2[spec · opus<br/>gstack /spec<br/>cites files touched]
+    M -->|bug| S3[spec · opus<br/>gstack /investigate<br/>root-cause spec]
+    S1 --> A1([specs/id.md])
+    S2 --> A1
+    S3 --> A1
+
+    WIKI[(wiki/index.md<br/>read first by spec + planner)] -.-> S1
+    WIKI -.-> S2
+    WIKI -.-> S3
+    WIKI -.-> P
+    A1 --> P[planner · opus<br/>superpowers:writing-plans]
+    P --> A2([plans/id.md])
+    A2 --> PR[plan-reviewer · sonnet<br/>gstack /plan-eng-review]
+    PR --> A3([reviews/id-plan-rN.md])
+    A3 --> G1{VERDICT}
+    G1 -->|REVISE, rounds < 3| P
+    G1 -->|REVISE, rounds = 3| BLK
+    G1 -->|APPROVE| B[builder · sonnet<br/>superpowers:executing-plans<br/>branch feat/id, test-first]
+
+    B --> A4([reports/id-build.md<br/>+ commits])
+    A4 --> QA[qa · sonnet<br/>gstack /qa-only<br/>no code edits]
+    QA --> A5([qa/id-rN.md])
+    A5 --> G2{VERDICT}
+    G2 -->|FAIL, rounds < 3| P
+    G2 -->|FAIL, rounds = 3| BLK
+    G2 -->|PASS| R[reviewer · opus<br/>gstack /review<br/>whole-branch diff]
+
+    R --> A6([reviews/id-code-rN.md])
+    A6 --> G3{VERDICT}
+    G3 -->|REVISE, rounds < 2| B
+    G3 -->|REVISE, rounds = 2| BLK
+    G3 -->|APPROVE| DONE[reports/id.md<br/>STATUS: DONE]
+
+    BLK[reports/id.md<br/>STATUS: BLOCKED<br/>last artifacts attached] --> LIB
+    DONE --> LIB[librarian · sonnet<br/>ingest id → wiki/items, modules,<br/>decisions, gotchas, index, log<br/>lint every 5th item]
+    LIB --> A7([wiki/ updated<br/>gate: log.md must grow])
+    A7 --> NEXT{queue empty?}
+    NEXT -->|no| Q
+    NEXT -->|yes| END([stop · Stop hook syncs<br/>pipeline/ to cloud bucket])
+
+    DONE -. human reads report,<br/>runs by hand .-> SHIP[ship · sonnet<br/>gstack /ship<br/>ISOLATED — not callable<br/>by orchestrator]
+
+    subgraph HARNESS[Enforced by Claude Code, not by the model]
+        H1[settings.json deny list<br/>no push · no merge · no rm -rf<br/>no edits to .claude/ or queue.md]
+        H2[SubagentStop hook gate.sh · exit 2<br/>no artifact → cannot finish<br/>no VERDICT line → cannot finish<br/>tested 11/11 cases]
+        H3[per-agent tools + maxTurns<br/>+ model pinned in frontmatter<br/>GSTACK_SESSION_KIND=spawned<br/>→ gstack skills never ask]
+        H4[state.json checkpoint<br/>after every step → resumable]
+        H5[wiki/ writable by librarian only<br/>tests/wiki-lint.sh · deterministic<br/>links · index · orphans · SHAs · log]
+    end
+
+    classDef agent fill:#e8f0fe,stroke:#3367d6,color:#111
+    classDef art fill:#fff8e1,stroke:#c99700,color:#111
+    classDef gate fill:#fce8e6,stroke:#c5221f,color:#111
+    classDef ship fill:#e6f4ea,stroke:#137333,stroke-dasharray:5 3,color:#111
+    class S1,S2,S3,P,PR,B,QA,R,LIB agent
+    class A1,A2,A3,A4,A5,A6,A7,WIKI art
+    class G1,G2,G3,M,NEXT gate
+    class SHIP ship

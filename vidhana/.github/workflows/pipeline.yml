@@ -1,0 +1,31 @@
+# TEMPLATE — read docs/build-guide.md §9.4 before enabling.
+# Runs the orchestrator when pipeline/queue.md changes on a pipeline/* branch, then pushes feat/* for review.
+name: vidhana-pipeline
+on:
+  push:
+    branches: ['pipeline/**']
+    paths: ['pipeline/queue.md']
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions: { contents: write }
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: sudo apt-get install -y -qq jq && npm i -g @anthropic-ai/claude-code
+      - run: bash scripts/bootstrap.sh
+      - name: run orchestrator
+        env: { ANTHROPIC_API_KEY: '${{ secrets.ANTHROPIC_API_KEY }}' }
+        run: claude --agent orchestrator -p "start" --max-turns 400 --output-format stream-json > pipeline/run.log || true
+      - name: upload paperwork
+        uses: actions/upload-artifact@v4
+        with: { name: pipeline-${{ github.run_id }}, path: 'pipeline/' }
+      - name: push feature branches for human review   # the ONLY push in the kit; delete if your policy forbids it
+        run: |
+          git config user.name pipeline-bot && git config user.email pipeline-bot@users.noreply.github.com
+          git add pipeline wiki && git commit -m "pipeline: run ${{ github.run_id }}" || true
+          git push origin HEAD; git push origin 'refs/heads/feat/*' || true

@@ -1,0 +1,85 @@
+{
+  "env": {
+    "GSTACK_SESSION_KIND": "spawned",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "16000"
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebSearch",
+      "WebFetch",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(pnpm *)",
+      "Bash(python *)",
+      "Bash(python3 *)",
+      "Bash(pytest *)",
+      "Bash(pip *)",
+      "Bash(uv *)",
+      "Bash(git *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(mkdir *)",
+      "Bash(curl *)"
+    ],
+    "deny": [
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git branch -D *)",
+      "Bash(git reset --hard *)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/*.pem)",
+      "Edit(./.claude/**)",
+      "Write(./.claude/**)",
+      "Edit(./pipeline/queue.md)",
+      "Write(./pipeline/queue.md)"
+    ]
+  },
+  "hooks": {
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/gate.sh",
+            "args": [],
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/sync-reports.sh",
+            "args": [],
+            "timeout": 120
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/scripts/bootstrap.sh",
+            "args": [],
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}
