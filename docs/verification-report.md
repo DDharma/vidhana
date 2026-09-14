@@ -35,6 +35,17 @@ Date: 2026-09-13 (updated same day with the LLM-wiki layer). Everything marked *
 | 21 | The wiki reduces spec/planner tokens by more than the librarian costs | **YOUR MACHINE** | Test Guide W4 (same fixture, wiki on vs off) |
 | 22 | The librarian writes accurate pages with correct provenance links | **YOUR MACHINE** | Test Guide W2, W3 — the lint proves structure, not truth |
 
+### Design layer (added 2026-09-14)
+
+| # | Claim in the docs | Status | Proof |
+|---|---|---|---|
+| 23 | Gate blocks the designer until both `DESIGN.md` and `pipeline/designs/<id>.md` are non-empty | **PROVEN (executed)** | `bash tests/gate-selftest.sh` → 17 passed, 0 failed (4 designer cases added: nothing, item file only, DESIGN.md only, both) |
+| 24 | gstack's design skills use a root `DESIGN.md` as the design-system source | **PROVEN (source)** | `grep -n DESIGN.md ~/.claude/skills/gstack/{design-consultation,design-review,plan-design-review,design-shotgun}/SKILL.md` — `design-consultation` writes it; the others read it and calibrate against it |
+| 25 | `design-consultation` also offers to write a design section into `CLAUDE.md` | **PROVEN (source)** | `design-consultation/sections/proposal-and-preview.md` Phase 6. The designer is fenced from `CLAUDE.md` and told to decline |
+| 26 | All 10 agent files have valid YAML frontmatter; only the designer lacks the `DESIGN.md` fence | **PROVEN (executed)** | `npx js-yaml` on each frontmatter block; `grep -L 'Write(./DESIGN.md)' .claude/agents/*.md` → designer.md, ship.md (ship has no Write tool) |
+| 27 | An agent with no `tools:` line inherits MCP tools, so the designer can reach Figma | **PROVEN (docs)** | sub-agents docs: omitting `tools` inherits all tools, including MCP tools. Confirm on your machine with Test Guide D4 |
+| 28 | Layer routing, Figma extraction, fallback, reuse and design-sync behave as described | **YOUR MACHINE** | Test Guide D1–D9 |
+
 ## Corrections made to the first draft (so you know what changed)
 
 1. Skill names: `gstack:spec` → `spec` (and same for the other five gstack skills).
@@ -45,6 +56,7 @@ Date: 2026-09-13 (updated same day with the LLM-wiki layer). Everything marked *
 6. Added the workspace-trust step to Getting Started.
 7. Added the repository root — the actual files, not just their description — plus `tests/gate-selftest.sh` so the proof is reproducible.
 8. Added the LLM-wiki layer (Karpathy pattern): `wiki/` skeleton, `librarian` agent, `.claude/rules/wiki-conventions.md`, `tests/wiki-lint.sh`, gate case, orchestrator step 7, wiki fences on all other agents, spec/planner read-index-first. Design in `wiki-structure.md`, usage in `wiki-usage.md`.
+9. Added the design layer (2026-09-14): `designer` agent between spec and planner for frontend/fullstack items, `DESIGN.md` system file (Figma via MCP, or generated), `pipeline/designs/<id>.md` per item, `layer:`/`design:` item fields, `type: design-sync`, `DESIGN:` line in `CLAUDE.md`, gate case, `DESIGN.md` fences, QA design-acceptance checks. Stale counts in rows 10, 11, 17, 19 are superseded by rows 23 and 26.
 
 ## What I could not check (wiki)
 

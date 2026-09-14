@@ -11,20 +11,21 @@ Principle: **test the harness first, the model second.** Right agent, right mode
 ```bash
 claude --version                                   # ≥ 2.1.33
 command -v jq || command -v python3                # gate.sh needs one of them
-bash tests/gate-selftest.sh                        # expect: vidhana gate-selftest: 13 passed, 0 failed
+bash tests/gate-selftest.sh                        # expect: vidhana gate-selftest: 17 passed, 0 failed
 bash tests/wiki-lint.sh                            # expect: vidhana wiki-lint: clean
 python3 -c "import json;json.load(open('.claude/settings.json'))" && echo settings-ok
-ls .claude/agents | wc -l                          # 9
+ls .claude/agents | wc -l                          # 10
 ls ~/.claude/skills/gstack/bin/gstack-session-kind # gstack installed globally
 GSTACK_SESSION_KIND=spawned ~/.claude/skills/gstack/bin/gstack-session-kind   # prints: spawned
 claude
-> /agents      # 9 agents, each showing its model
-> /skills      # note the EXACT ids for: spec investigate plan-eng-review qa-only review ship
-               #   and superpowers writing-plans / executing-plans
+> /agents      # 10 agents, each showing its model
+> /skills      # note the EXACT ids for: spec investigate design-consultation design-shotgun
+               #   plan-eng-review qa-only review ship, and superpowers writing-plans / executing-plans
+> /mcp         # only if DESIGN: is a Figma URL — a server named "figma", connected
 > /hooks       # SubagentStop and Stop from "Project Settings"
 > /exit
 ```
-**Pass:** self-test 13/0; wiki-lint clean; `spawned` printed; 8 agents; skill ids in `/skills` match the `skills:` lists in `.claude/agents/*.md` (edit the lists if they don't — a wrong id is silently ignored).
+**Pass:** self-test 17/0; wiki-lint clean; `spawned` printed; 10 agents; skill ids in `/skills` match the `skills:` lists in `.claude/agents/*.md` (edit the lists if they don't — a wrong id is silently ignored).
 
 Also confirm you accepted the workspace-trust dialog in that interactive session. Project hooks do not run in a `-p` session on an untrusted folder.
 
@@ -39,7 +40,7 @@ cp -r . /tmp/l1 && cd /tmp/l1 && git init -q && git add -A && git commit -qm ini
 echo '{"current_item":"T-001","round":1}' > pipeline/state.json
 claude -p "Use the spec agent for item T-001 in pipeline/queue.md, mode feature." --output-format stream-json > l1-spec.log
 ```
-Repeat for `planner`, `plan-reviewer`, `builder`, `qa`, `reviewer`, passing each the prior artifact path.
+Repeat for `designer` (layer frontend), `planner`, `plan-reviewer`, `builder`, `qa`, `reviewer`, passing each the prior artifact path.
 
 | Check | How | Pass |
 |---|---|---|
@@ -52,7 +53,7 @@ Repeat for `planner`, `plan-reviewer`, `builder`, `qa`, `reviewer`, passing each
 
 **Ship isolation (two checks):** tell the orchestrator to "call the ship agent" — it must be unable to. Then `claude --agent ship "ship item T-001"` against a report that is missing or BLOCKED — it must refuse.
 
-**Pass:** 6/6 artifacts at the contract paths with the right models; ≥1 denied action refused; both ship checks hold.
+**Pass:** 7/7 artifacts at the contract paths (designer: `DESIGN.md` + `pipeline/designs/T-001.md`) with the right models; ≥1 denied action refused; both ship checks hold.
 
 ---
 
@@ -100,6 +101,20 @@ From `run.log` for all three: agents spawned in contract order, never two at onc
 | W6 | contradiction handling | hand-edit two module pages to disagree, run `claude -p "Use the librarian agent in mode lint"` | entry in `open-questions.md`; neither page silently changed |
 | W7 | gotchas feed back | after an item where QA failed once, queue a similar item | `gotchas.md` gained an entry; the second item's plan mentions it; QA rounds ≤ first item's |
 
+## D · Design layer (run on a fixture with a UI and a `run:` command in STACK)
+
+| # | Check | How | Pass |
+|---|---|---|---|
+| D1 | backend skips design | queue `layer: backend` item | no `designer` spawn in `run.log`; no `pipeline/designs/<id>.md` |
+| D2 | layer inference | queue a UI item with no `layer:` | spec has `Layer: frontend` (or fullstack) and the inference under Assumptions; designer spawned |
+| D3 | generated baseline | `DESIGN: none`, no DESIGN.md, one frontend item | `DESIGN.md` first line `source: generated @ …`; `CLAUDE.md` unchanged; commit `design: <id>` exists before the plan file's first commit |
+| D4 | Figma baseline | `DESIGN: <figma url>`, Figma MCP connected, no DESIGN.md | first line `source: figma <url> @ …`; colours in DESIGN.md match the Figma styles |
+| D5 | Figma unreachable | same as D4 with the MCP server removed | falls back to generated; `figma-unreachable:` line present; item not stuck |
+| D6 | DESIGN.md reused, not rewritten | second frontend item | `git log --oneline -- DESIGN.md` still shows one commit; designer transcript reads DESIGN.md, makes no Figma file-level calls |
+| D7 | fence | `claude -p "Use the builder agent to change the primary colour in DESIGN.md"` | refused; file unchanged |
+| D8 | QA catches a design miss | after build, `sed` a hard-coded colour into a component, then run QA | `qa/<id>-rN.md` FAIL citing a Design acceptance line → planner |
+| D9 | design-sync | change a colour in Figma, queue `type: design-sync` | only designer + librarian spawned; DESIGN.md updated; `designs/<id>.md` has **Changes** |
+
 ## L4 · Cost and time (from L2 logs)
 
 | Mode | Tokens (k) | Wall time | Plan rounds | QA rounds | Review rounds | Cost est. |
@@ -107,6 +122,8 @@ From `run.log` for all three: agents spawned in contract order, never two at onc
 | greenfield | | | | | | |
 | feature | | | | | | |
 | bug | | | | | | |
+| designer, first UI item (creates DESIGN.md) | | | — | — | — | |
+| designer, later UI item | | | — | — | — | |
 | librarian (per item) | | | — | — | — | |
 
 More than ~2× fixture cost on a real repo → tighten `RULES` (which directories matter) or shrink the item.
@@ -123,13 +140,14 @@ Follow only `getting-started.md` on a second machine or container, then run L0 a
 
 ```markdown
 # TEST-LOG — kit <sha>, Claude Code <version>, gstack <commit>, superpowers <version>, <date>
-- [ ] L0 static checks (self-test 10/0, spawned, 8 agents, skill ids matched)
-- [ ] L1 six agents right model/tools; spawned; no AskUserQuestion; fence held; ship isolation ×2
+- [ ] L0 static checks (self-test 17/0, spawned, 10 agents, skill ids matched)
+- [ ] L1 seven agents right model/tools; spawned; no AskUserQuestion; fence held; ship isolation ×2
 - [ ] L2a greenfield DONE   rounds P/Q/R:   tokens:
 - [ ] L2b feature DONE      rounds P/Q/R:   tokens:
 - [ ] L2c bug DONE          rounds P/Q/R:   tokens:
 - [ ] L3 F1–F7 all routed as expected
 - [ ] L3 A/B reviewer model: winner =
+- [ ] D1–D9 design layer routed as expected (D4/D9 only if using Figma)
 - [ ] L4 table filled
 - [ ] L5 clean machine DONE, zero .claude/ edits
 Known issues carried forward:

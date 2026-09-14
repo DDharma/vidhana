@@ -25,6 +25,8 @@ id=$(json_get "$sjson" current_item); round=$(json_get "$sjson" round); round=${
 [ -z "$id" ] && [ "$agent" != librarian ] && exit 0   # no active item → nothing to gate (except lint)
 case "$agent" in
   spec)          need="$root/pipeline/specs/$id.md" ;;
+  designer)      need="$root/pipeline/designs/$id.md"
+                 [ -s "$root/DESIGN.md" ] || { echo "GATE: DESIGN.md is missing or empty at the repo root. Write it, then stop." >&2; exit 2; } ;;
   planner)       need="$root/pipeline/plans/$id.md" ;;
   plan-reviewer) need="$root/pipeline/reviews/$id-plan-r$round.md" ;;
   builder)       need="$root/pipeline/reports/$id-build.md" ;;

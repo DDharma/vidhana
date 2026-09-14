@@ -1,6 +1,6 @@
 # Wiki Usage Guide — getting the most out of the project memory
 
-The wiki is built and structurally tested (13/13 gate cases, lint clean, six planted defects caught). This guide is about *using* it well once it's running, and about what to change after your first tests. It assumes you've read `getting-started.md`.
+The wiki is built and structurally tested (17/17 gate cases, lint clean, six planted defects caught). This guide is about *using* it well once it's running, and about what to change after your first tests. It assumes you've read `getting-started.md`.
 
 ---
 

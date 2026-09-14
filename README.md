@@ -1,8 +1,8 @@
 # Vidhana
 
-**Vidhana** (Sanskrit *vidhāna*: arrangement, procedure) is an unattended software-engineering pipeline for [Claude Code](https://docs.claude.com/en/docs/claude-code/overview). Drop a feature or bug into a queue; a team of eight pinned-model subagents writes the spec, plans it, reviews the plan, builds it test-first on a branch, runs QA, reviews the diff, writes a report, and files what it learned into a project wiki. Shipping is a separate command a human runs.
+**Vidhana** (Sanskrit *vidhāna*: arrangement, procedure) is an unattended software-engineering pipeline for [Claude Code](https://docs.claude.com/en/docs/claude-code/overview). Drop a feature or bug into a queue; a team of nine pinned-model subagents writes the spec, designs the screens when the item touches UI, plans it, reviews the plan, builds it test-first on a branch, runs QA, reviews the diff, writes a report, and files what it learned into a project wiki. Shipping is a separate command a human runs.
 
-Built on two open-source skill libraries — [gstack](https://github.com/garrytan/gstack) (spec, plan review, QA, review, ship) and [Superpowers](https://github.com/obra/superpowers) (writing and executing plans) — and on [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) for memory.
+Built on two open-source skill libraries — [gstack](https://github.com/garrytan/gstack) (spec, design system, plan review, QA, review, ship) and [Superpowers](https://github.com/obra/superpowers) (writing and executing plans) — and on [Karpathy's LLM Wiki pattern](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f) for memory.
 
 ## Status, honestly
 
@@ -10,7 +10,7 @@ Built on two open-source skill libraries — [gstack](https://github.com/garryta
 |---|---|
 | Every referenced skill exists in the upstream repos (Sept 2026) | [verification report](docs/verification-report.md) rows 1–5 |
 | No-human mode is real: gstack's own `GSTACK_SESSION_KIND=spawned` auto-chooses at every prompt | row 3 |
-| The safety gate blocks an agent that hasn't written its artifact or verdict | `bash tests/gate-selftest.sh` → 13/13 |
+| The safety gate blocks an agent that hasn't written its artifact or verdict | `bash tests/gate-selftest.sh` → 17/17 |
 | The wiki lint catches broken links, orphans, un-indexed pages, copied values, bad log lines | `bash tests/wiki-lint.sh` + 6 planted defects, rows 17–18 |
 | **The full end-to-end run on a real repo** | **not proven here** — needs your credentials; [test guide](docs/test-guide.md) L1–L5 and W1–W7, ~half a day |
 
@@ -24,12 +24,12 @@ git clone --depth 1 https://github.com/DDharma/vidhana.git tmp-kit && rm -rf tmp
 
 # 2. install the two skill libraries (once per machine) and check the kit
 bash scripts/bootstrap.sh
-bash tests/gate-selftest.sh      # vidhana gate-selftest: 13 passed, 0 failed
+bash tests/gate-selftest.sh      # vidhana gate-selftest: 17 passed, 0 failed
 bash tests/wiki-lint.sh          # vidhana wiki-lint: clean
 
 # 3. trust the folder once, then tell it about your project
 claude                           # accept the trust dialog, then /exit
-$EDITOR CLAUDE.md                # three lines: NAME, STACK, RULES
+$EDITOR CLAUDE.md                # four lines: NAME, STACK, RULES, DESIGN (Figma URL or none)
 
 # 4. queue an item and run
 $EDITOR pipeline/queue.md
@@ -46,7 +46,10 @@ Full walkthrough: [docs/getting-started.md](docs/getting-started.md).
 
 ```mermaid
 flowchart LR
-    Q[/queue.md/] --> S[spec · opus] --> P[planner · opus] --> PR{plan review · sonnet}
+    Q[/queue.md/] --> S[spec · opus] --> LY{layer?}
+    LY -->|backend| P[planner · opus]
+    LY -->|frontend / fullstack| DS[designer · opus<br/>DESIGN.md + screens] --> P
+    P --> PR{plan review · sonnet}
     PR -->|REVISE ≤3| P
     PR -->|APPROVE| B[builder · sonnet] --> QA{qa · sonnet}
     QA -->|FAIL ≤3| P
@@ -64,13 +67,14 @@ Four mechanisms make it unattended: gstack's spawned mode (skills never ask), ro
 ## Repository layout
 
 ```
-CLAUDE.md                 3 editable lines + the pipeline contract + wiki schema
+CLAUDE.md                 4 editable lines + the pipeline contract + design and wiki schemas
+DESIGN.md                 project design system — created by the designer on the first UI item (not shipped)
 .claude/
   settings.json           env, allow/deny, hooks (SessionStart bootstrap, SubagentStop gate, Stop sync)
-  agents/                 orchestrator spec planner plan-reviewer builder qa reviewer librarian ship
+  agents/                 orchestrator spec designer planner plan-reviewer builder qa reviewer librarian ship
   hooks/                  gate.sh · sync-reports.sh
   rules/                  wiki-conventions.md
-pipeline/                 queue.md · state.json · specs/ plans/ reviews/ qa/ reports/   (raw sources)
+pipeline/                 queue.md · state.json · specs/ designs/ plans/ reviews/ qa/ reports/   (raw sources)
 wiki/                     index.md · log.md · overview.md · gotchas.md · modules/ decisions/ items/
 scripts/bootstrap.sh      installs gstack + Superpowers; idempotent; used by cloud sessions
 tests/                    gate-selftest.sh · wiki-lint.sh
@@ -91,7 +95,7 @@ docs/                     see below
 
 ## Requirements
 
-Claude Code ≥ 2.1.33 · git · `jq` or `python3` · your project's toolchain · a Claude subscription or API key. Cost is real: 6–10 Claude sessions per queue item plus one for the librarian. Measure on a small fixture first ([test guide L4](docs/test-guide.md)).
+Claude Code ≥ 2.1.33 · git · `jq` or `python3` · your project's toolchain · a Claude subscription or API key. Optional: a Figma MCP server named `figma`, if `DESIGN:` points at Figma. Cost is real: 6–10 Claude sessions per queue item (one more for UI items) plus one for the librarian. Measure on a small fixture first ([test guide L4](docs/test-guide.md)).
 
 ## Contributing to Vidhana
 
