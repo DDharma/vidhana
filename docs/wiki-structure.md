@@ -1,6 +1,6 @@
 # Folder Structure with the LLM Wiki
 
-This document describes the kit's layout once Karpathy's LLM-Wiki pattern is added as a memory layer for the pipeline. Pattern source: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f. Status: **built into the repository root** on 2026-09-13. Gate self-test 13/13, `wiki-lint.sh` clean on the skeleton and catching all six planted defects. What remains is the on-your-machine part (Test Guide section W). The permission-precedence question in §5 was resolved by putting the fence in every other agent's `disallowedTools` rather than a project-level deny; W1 confirms it on your version.
+This document describes the kit's layout once Karpathy's LLM-Wiki pattern is added as a memory layer for the pipeline. Pattern source: https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f. Status: **built into the repository root** on 2026-09-13. Gate self-test 17/17 (current, including the later designer cases), `wiki-lint.sh` clean on the skeleton and catching all six planted defects. What remains is the on-your-machine part (Test Guide section W). The permission-precedence question in §5 was resolved by putting the fence in every other agent's `disallowedTools` rather than a project-level deny; W1 confirms it on your version.
 
 Legend in trees: `+` new file or folder · `~` existing file that changes · unmarked = unchanged from the current kit.
 

@@ -4,30 +4,31 @@ The kit *is* this repository: clone it into a project and the `.claude/`, `pipel
 
 ## 1. What runs, in one paragraph
 
-You launch one Claude Code session as the `orchestrator` agent. It reads `pipeline/queue.md`, picks the next item, and spawns six purpose-built subagents in sequence: `spec → planner → plan-reviewer → builder → qa → reviewer`. Each subagent is a Markdown file in `.claude/agents/` that pins a model, a tool allowlist, and the skills it preloads (gstack for spec/review/QA, Superpowers for planning/execution). Each must write a specific artifact before Claude Code lets it finish — a `SubagentStop` hook (`gate.sh`) blocks it otherwise. The orchestrator reads the artifact's `VERDICT:` line and loops or advances per fixed rules with round caps. A `ship` agent exists, but the orchestrator's tool list physically excludes it.
+You launch one Claude Code session as the `orchestrator` agent. It reads `pipeline/queue.md`, picks the next item, and spawns purpose-built subagents in sequence: `spec → [designer] → planner → plan-reviewer → builder → qa → reviewer`. The designer runs only when the item's layer is `frontend` or `fullstack` (§5c). Each subagent is a Markdown file in `.claude/agents/` that pins a model, a tool allowlist, and the skills it preloads (gstack for spec/review/QA, Superpowers for planning/execution). Each must write a specific artifact before Claude Code lets it finish — a `SubagentStop` hook (`gate.sh`) blocks it otherwise. The orchestrator reads the artifact's `VERDICT:` line and loops or advances per fixed rules with round caps. A `ship` agent exists, but the orchestrator's tool list physically excludes it.
 
 ## 2. Folder tree (as shipped in the repository root)
 
 ```
 <repo root>
-├── CLAUDE.md                     3 editable lines + the PIPELINE CONTRACT
+├── CLAUDE.md                     4 editable lines + the PIPELINE CONTRACT + DESIGN and WIKI schemas
 ├── README.md                     6-command summary for recipients
+├── DESIGN.md                     (not shipped) project design system, written by the designer on the first UI item
 ├── .claude/
 │   ├── settings.json             env (GSTACK_SESSION_KIND=spawned), allow/deny, hooks
 │   ├── rules/wiki-conventions.md the wiki schema: 6 rules + page templates
-│   ├── agents/                   orchestrator spec planner plan-reviewer builder qa reviewer librarian ship
+│   ├── agents/                   orchestrator spec designer planner plan-reviewer builder qa reviewer librarian ship
 │   └── hooks/
 │       ├── gate.sh               SubagentStop: no artifact / no VERDICT → exit 2 → cannot stop
 │       └── sync-reports.sh       Stop: copy pipeline/ to a bucket if PIPELINE_BUCKET is set
 ├── pipeline/                     RAW SOURCES — written once, never edited
 │   ├── queue.md                  work items (one sample item included)
 │   ├── state.json                orchestrator checkpoint, starts as {}
-│   └── specs/ plans/ reviews/ qa/ reports/
+│   └── specs/ designs/ plans/ reviews/ qa/ reports/
 ├── wiki/                         PROJECT MEMORY — librarian writes, spec/planner read
 │   ├── index.md log.md overview.md gotchas.md open-questions.md
 │   └── modules/ decisions/ items/
 └── tests/
-    ├── gate-selftest.sh          reproduces the 13-case gate proof
+    ├── gate-selftest.sh          reproduces the 17-case gate proof
     └── wiki-lint.sh              deterministic wiki checks, no model call
 ```
 
@@ -65,8 +66,9 @@ This writes a SessionStart check into `.claude/settings.json` (merging with the 
 
 | Agent | Model | Skills preloaded | Writes | Notes |
 |---|---|---|---|---|
-| orchestrator | sonnet | — | `state.json`, `reports/<id>.md` | `tools:` lists `Agent(spec) … Agent(reviewer)`; **no** `Agent(ship)` |
-| spec | opus | `spec`, `investigate` | `specs/<id>.md` | bug items use `/investigate`; must end with "Acceptance criteria" |
+| orchestrator | sonnet | — | `state.json`, `reports/<id>.md`, commits | `tools:` lists `Agent(spec) … Agent(librarian)`; **no** `Agent(ship)`; routes by layer |
+| spec | opus | `spec`, `investigate` | `specs/<id>.md` | bug items use `/investigate`; writes a `Layer:` line; must end with "Acceptance criteria" |
+| designer | opus | `design-consultation`, `design-shotgun` | `DESIGN.md` (if missing / design-sync) + `designs/<id>.md` | frontend/fullstack only; no `tools:` line so Figma MCP tools are inherited; gate: both files must exist |
 | planner | opus | `superpowers:writing-plans` | `plans/<id>.md` | opens with "Changes from round N" when looping |
 | plan-reviewer | sonnet | `plan-eng-review` | `reviews/<id>-plan-rN.md` | last line `VERDICT: APPROVE\|REVISE` |
 | builder | sonnet | `superpowers:executing-plans` | branch `feat/<id>` + `reports/<id>-build.md` | `disallowedTools` blocks push/merge/reset |
@@ -75,7 +77,7 @@ This writes a SessionStart check into `.claude/settings.json` (merging with the 
 | librarian | sonnet | — (follows `.claude/rules/wiki-conventions.md`) | `wiki/**` | runs after every DONE/BLOCKED; `lint` every 5th item; gate: `log.md` must grow |
 | ship | sonnet | `ship` | — | manual: `claude --agent ship "ship item <id>"`; refuses unless report says DONE |
 
-Model choice is a judgment: opus where a mistake is expensive (spec, plan, final review), sonnet where the work is mechanical or long (build, QA, routing). The planner/plan-reviewer split across models is a hypothesis; the Test Guide has an A/B step to measure it on your stack.
+Model choice is a judgment: opus where a mistake is expensive (spec, design, plan, final review), sonnet where the work is mechanical or long (build, QA, routing). The planner/plan-reviewer split across models is a hypothesis; the Test Guide has an A/B step to measure it on your stack.
 
 Pin full model IDs (e.g. `claude-opus-5`) instead of aliases once you have a working baseline, so results don't drift when aliases move.
 
@@ -85,17 +87,36 @@ Karpathy's LLM-wiki pattern applied to the pipeline's own paperwork. `pipeline/`
 
 Fences: only the librarian lacks `disallowedTools: Write(./wiki/**), Edit(./wiki/**)`; the gate refuses to let the librarian stop unless `log.md` grew; `tests/wiki-lint.sh` fails on broken links, un-indexed pages, orphans, bare SHAs or "the N modules" phrases in prose, and malformed log headings. Full design: `wiki-structure.md`. How to use it well: `wiki-usage.md`.
 
+## 5c. The design layer
+
+Design sits **after spec and before the planner**, not after plan review: the planner splits work into tasks that each name a test, and for UI work those tasks depend on which screens, states and tokens exist. Designing after an approved plan would force a replan and waste a plan round.
+
+Two levels:
+
+| Level | File | Written | Content |
+|---|---|---|---|
+| System | `DESIGN.md` at repo root | once, by the designer, when missing; again only for a `type: design-sync` item | colour tokens and rules, typography, spacing, radii/elevation/motion, components, do/don't. First line `source: figma <url> @ <date>` or `source: generated @ <date>` |
+| Item | `pipeline/designs/<id>.md` | every frontend/fullstack item | screens, states, token names used, token gaps, **Design acceptance** checkboxes |
+
+Where DESIGN.md comes from is set by the `DESIGN:` line in `CLAUDE.md`. A Figma URL means the designer reads styles, variables and components through the Figma MCP; `none` (or Figma unreachable) means gstack `/design-consultation` generates a baseline. gstack's `design-review`, `plan-design-review`, `design-shotgun` and `design-html` all read a root `DESIGN.md` natively, so the file serves them too. After that, planner, plan-reviewer, builder, QA and reviewer read `DESIGN.md` and `designs/<id>.md` — nobody goes back to Figma per item.
+
+Routing: the orchestrator takes the layer from the item's `layer:`, else the spec's `Layer:` line, else `fullstack` (design runs when in doubt). Right after the designer returns, the orchestrator commits `DESIGN.md` and `pipeline/designs/` on the current branch, so the builder's `feat/<id>` branch and every later item contain the same design system.
+
+Fences: every other agent has `Write/Edit(./DESIGN.md)` in `disallowedTools`; the designer cannot commit or edit `CLAUDE.md` (gstack's `/design-consultation` otherwise offers to add a design section there). QA checks "Design acceptance" lines report-only; it deliberately does not preload `/design-review`, which fixes code. Figma MCP: add it as a server named `figma` (the settings allow `mcp__figma`) and authenticate it on the machine beforehand — OAuth cannot happen inside a `-p` or CI run. Without it the designer falls back to a generated DESIGN.md and records `figma-unreachable:`.
+
 ## 6. Data contract
 
 ```markdown
 ## item: F-001                    # id → all artifact names
-type: feature                     # greenfield | feature | bug
+type: feature                     # greenfield | feature | bug | design-sync
+layer: frontend                   # optional: backend | frontend | fullstack (spec infers if absent)
+design: https://figma.com/...     # optional: frames for this item's screens
 title: ...
 acceptance:                       # feature/greenfield: testable criteria
 - ...
 repro: ...                        # bug only: exact steps, actual vs expected
 ```
-`state.json` (written by the orchestrator): `{current_item, step, round, rounds:{plan,qa,review}, started}`. `gate.sh` reads `current_item` and `round` from it to know which file to demand.
+`state.json` (written by the orchestrator): `{current_item, step, layer, round, rounds:{plan,qa,review}, started}`. `gate.sh` reads `current_item` and `round` from it to know which file to demand.
 
 ## 7. Running
 
@@ -115,8 +136,9 @@ Re-running the same command after a crash resumes from `state.json`.
 | New project from scratch | `git init`; first item `type: greenfield`; `STACK` line decides scaffold |
 | Existing running project | unzip at repo root; fill `STACK`/`RULES` from the real repo; get `main` green first |
 | Bug fix from current state | item `type: bug` with `repro:`; spec step becomes `/investigate`; plans are usually 1–3 tasks |
+| UI work | set `DESIGN:` in `CLAUDE.md` (Figma URL or `none`); first frontend/fullstack item creates `DESIGN.md`; `type: design-sync` refreshes it after Figma changes |
 
-Modes are per item, so a mixed queue is fine.
+Modes and layers are per item, so a mixed queue is fine.
 
 ## 9. Running in the cloud for maximum throughput
 
@@ -141,7 +163,7 @@ docker run -it --rm -e ANTHROPIC_API_KEY -v "$PWD:/work" -w /work node:20 bash -
   bash scripts/bootstrap.sh && claude --agent orchestrator -p "start" --max-turns 400 --output-format stream-json > pipeline/run.log'
 ```
 
-**Parallelism is where the performance comes from.** Items in the queue are independent, and each runs on its own `feat/<id>` branch. Run N containers, each with a queue holding one item and a `PIPELINE_BUCKET` pointing at the same bucket. Do not run two orchestrators on the same checkout: `state.json` is a single file. The rule is one checkout per orchestrator, which is what containers give you for free. Merge conflicts between branches are handled at `/ship` time, by a human, one branch at a time — the same as today.
+**Parallelism is where the performance comes from.** Items in the queue are independent, and each runs on its own `feat/<id>` branch. Run N containers, each with a queue holding one item and a `PIPELINE_BUCKET` pointing at the same bucket. Do not run two orchestrators on the same checkout: `state.json` is a single file. The rule is one checkout per orchestrator, which is what containers give you for free. Merge conflicts between branches are handled at `/ship` time, by a human, one branch at a time — the same as today. If `DESIGN.md` does not exist yet, run one `type: design-sync` item and commit its `DESIGN.md` **before** fanning out; otherwise each container generates its own, different design system.
 
 Cost note: N parallel runs cost N× the tokens in a fraction of the wall time; the per-item cost doesn't change. Set `--max-turns` and consider a per-container budget using your provider's spend limits, because a looping item is capped in rounds but not in turns per round.
 
@@ -177,4 +199,6 @@ Move the loop into code with the Claude Agent SDK when testing shows the orchest
 - **The gate checks presence, not honesty**: an agent could write `VERDICT: PASS` on a lie. Test Guide L3 F2 (planted bug) is how you check QA actually says FAIL when it should.
 - **`skills:` preload ids**: confirm against `/skills` output; a misspelled id is silently ignored.
 - **The wiki lint proves shape, not truth.** A page can be well-linked and wrong. Read the first three `wiki/items/` pages yourself (Test Guide W2).
+- **DESIGN.md is a copy, not a live link.** Figma changes do not reach the pipeline until a `type: design-sync` item runs; the `source: … @ date` line shows how old the copy is.
+- **Branches stack.** Each `feat/<id>` is created from whatever branch is checked out, so later items (and the committed `DESIGN.md`) build on earlier unshipped branches. Ship in queue order.
 - **Worktree isolation** is intentionally off in v1. If you re-enable `isolation: worktree` on the builder, artifacts are written inside the worktree branch — read them with `git show feat/<id>:pipeline/...`.

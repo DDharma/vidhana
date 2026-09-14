@@ -8,7 +8,8 @@ flowchart TD
     M -->|greenfield| S1[spec · opus<br/>gstack /spec<br/>+ scaffold & tooling]
     M -->|feature| S2[spec · opus<br/>gstack /spec<br/>cites files touched]
     M -->|bug| S3[spec · opus<br/>gstack /investigate<br/>root-cause spec]
-    S1 --> A1([specs/id.md])
+    M -->|design-sync| DSN
+    S1 --> A1([specs/id.md<br/>+ Layer: line])
     S2 --> A1
     S3 --> A1
 
@@ -16,7 +17,13 @@ flowchart TD
     WIKI -.-> S2
     WIKI -.-> S3
     WIKI -.-> P
-    A1 --> P[planner · opus<br/>superpowers:writing-plans]
+    A1 --> LY{layer?}
+    LY -->|backend| P
+    LY -->|frontend / fullstack| DSN[designer · opus<br/>Figma MCP or /design-consultation<br/>+ /design-shotgun]
+    DSN --> AD([DESIGN.md if missing<br/>+ designs/id.md<br/>committed before plan])
+    AD -->|design-sync| DONE
+    AD --> P[planner · opus<br/>superpowers:writing-plans]
+    DMD[(DESIGN.md<br/>read by planner, builder,<br/>qa, reviewer)] -.-> P
     P --> A2([plans/id.md])
     A2 --> PR[plan-reviewer · sonnet<br/>gstack /plan-eng-review]
     PR --> A3([reviews/id-plan-rN.md])
@@ -26,7 +33,7 @@ flowchart TD
     G1 -->|APPROVE| B[builder · sonnet<br/>superpowers:executing-plans<br/>branch feat/id, test-first]
 
     B --> A4([reports/id-build.md<br/>+ commits])
-    A4 --> QA[qa · sonnet<br/>gstack /qa-only<br/>no code edits]
+    A4 --> QA[qa · sonnet<br/>gstack /qa-only<br/>+ Design acceptance for UI<br/>no code edits]
     QA --> A5([qa/id-rN.md])
     A5 --> G2{VERDICT}
     G2 -->|FAIL, rounds < 3| P
@@ -49,8 +56,8 @@ flowchart TD
     DONE -. human reads report,<br/>runs by hand .-> SHIP[ship · sonnet<br/>gstack /ship<br/>ISOLATED — not callable<br/>by orchestrator]
 
     subgraph HARNESS[Enforced by Claude Code, not by the model]
-        H1[settings.json deny list<br/>no push · no merge · no rm -rf<br/>no edits to .claude/ or queue.md]
-        H2[SubagentStop hook gate.sh · exit 2<br/>no artifact → cannot finish<br/>no VERDICT line → cannot finish<br/>tested 11/11 cases]
+        H1[settings.json deny list<br/>no push · no merge · no rm -rf<br/>no edits to .claude/ or queue.md<br/>DESIGN.md writable by designer only]
+        H2[SubagentStop hook gate.sh · exit 2<br/>no artifact → cannot finish<br/>no VERDICT line → cannot finish<br/>tested 17/17 cases]
         H3[per-agent tools + maxTurns<br/>+ model pinned in frontmatter<br/>GSTACK_SESSION_KIND=spawned<br/>→ gstack skills never ask]
         H4[state.json checkpoint<br/>after every step → resumable]
         H5[wiki/ writable by librarian only<br/>tests/wiki-lint.sh · deterministic<br/>links · index · orphans · SHAs · log]
@@ -60,8 +67,8 @@ flowchart TD
     classDef art fill:#fff8e1,stroke:#c99700,color:#111
     classDef gate fill:#fce8e6,stroke:#c5221f,color:#111
     classDef ship fill:#e6f4ea,stroke:#137333,stroke-dasharray:5 3,color:#111
-    class S1,S2,S3,P,PR,B,QA,R,LIB agent
-    class A1,A2,A3,A4,A5,A6,A7,WIKI art
-    class G1,G2,G3,M,NEXT gate
+    class S1,S2,S3,DSN,P,PR,B,QA,R,LIB agent
+    class A1,AD,A2,A3,A4,A5,A6,A7,WIKI,DMD art
+    class G1,G2,G3,M,LY,NEXT gate
     class SHIP ship
 ```
