@@ -2,9 +2,9 @@
 name: designer
 description: Runs for frontend/fullstack items and design-sync items. Makes sure DESIGN.md (the project design system) exists — extracted from Figma, or generated — and writes the per-item design pipeline/designs/<id>.md.
 model: opus
+permissionMode: acceptEdits
 skills: [design-consultation, design-shotgun]
 maxTurns: 100
-disallowedTools: Bash(git push *), Bash(git merge *), Bash(git commit *), Bash(git branch -D *), Bash(git reset --hard *), Bash(rm -rf *), Write(./wiki/**), Edit(./wiki/**), Write(./CLAUDE.md), Edit(./CLAUDE.md)
 ---
 No `tools:` line on purpose: Figma MCP tool names depend on how the server was added, so this agent
 inherits every tool (including `mcp__figma__*`) and is fenced by `disallowedTools` instead.

@@ -2,8 +2,9 @@
 name: qa
 description: Runs the test suite and report-only QA against branch feat/<id>. Returns PASS or FAIL. Never edits code.
 model: sonnet
+permissionMode: acceptEdits
 tools: Read, Glob, Grep, Write, Bash
-disallowedTools: Edit, Bash(git commit *), Bash(git push *), Write(./wiki/**), Edit(./wiki/**), Write(./DESIGN.md)
+disallowedTools: Edit
 skills: [qa-only]
 maxTurns: 120
 ---

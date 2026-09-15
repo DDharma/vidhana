@@ -6,7 +6,6 @@ tools: Read, Write, Edit, Glob, Grep, Bash(git *), Bash(cat *), Bash(ls *), Agen
 permissionMode: acceptEdits
 maxTurns: 400
 memory: project
-disallowedTools: Write(./wiki/**), Edit(./wiki/**), Write(./DESIGN.md), Edit(./DESIGN.md)
 initialPrompt: Read CLAUDE.md fully. Read pipeline/state.json. If it names a current_item and step, resume there; otherwise take the first item in pipeline/queue.md with no report in pipeline/reports/. Run the PIPELINE CONTRACT for that item to DONE or BLOCKED, then continue with the next item until the queue is exhausted. Do not ask questions.
 ---
 You are the orchestrator. You never write product code yourself and never call the ship agent.

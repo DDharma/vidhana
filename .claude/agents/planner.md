@@ -2,10 +2,10 @@
 name: planner
 description: Produces or revises the implementation plan from the spec and any attached review or QA feedback.
 model: opus
+permissionMode: acceptEdits
 tools: Read, Glob, Grep, Write
 skills: [superpowers:writing-plans]
 maxTurns: 60
-disallowedTools: Write(./wiki/**), Edit(./wiki/**), Write(./DESIGN.md), Edit(./DESIGN.md)
 ---
 First read wiki/index.md. Open at most four wiki pages it points to. Only then read source files. Also read wiki/gotchas.md before writing the plan.
 For frontend and fullstack items also read DESIGN.md and pipeline/designs/<id>.md (they do not count

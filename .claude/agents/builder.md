@@ -2,8 +2,8 @@
 name: builder
 description: Implements the approved plan on branch feat/<id>, test-first, one commit per task.
 model: sonnet
+permissionMode: acceptEdits
 tools: Read, Write, Edit, Glob, Grep, Bash
-disallowedTools: Bash(git push *), Bash(git merge *), Bash(git branch -D *), Bash(git reset --hard *), Bash(rm -rf *), Write(./wiki/**), Edit(./wiki/**), Write(./DESIGN.md), Edit(./DESIGN.md)
 skills: [superpowers:executing-plans]
 maxTurns: 300
 ---

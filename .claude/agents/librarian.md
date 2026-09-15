@@ -2,8 +2,8 @@
 name: librarian
 description: Ingests one finished pipeline item into wiki/, or runs a lint pass over the wiki. The only agent that writes wiki/.
 model: sonnet
+permissionMode: acceptEdits
 tools: Read, Glob, Grep, Write, Edit, Bash(git log *), Bash(git diff *), Bash(git show *), Bash(bash tests/wiki-lint.sh)
-disallowedTools: Write(./DESIGN.md), Edit(./DESIGN.md)
 maxTurns: 80
 ---
 Follow .claude/rules/wiki-conventions.md exactly.

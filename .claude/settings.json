@@ -1,9 +1,10 @@
 {
   "env": {
     "GSTACK_SESSION_KIND": "spawned",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "16000"
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "32000"
   },
   "permissions": {
+    "defaultMode": "acceptEdits",
     "allow": [
       "Read",
       "Write",
@@ -39,9 +40,7 @@
       "Read(./.env.*)",
       "Read(**/*.pem)",
       "Edit(./.claude/**)",
-      "Write(./.claude/**)",
-      "Edit(./pipeline/queue.md)",
-      "Write(./pipeline/queue.md)"
+      "Edit(./pipeline/queue.md)"
     ]
   },
   "hooks": {
@@ -78,6 +77,18 @@
             "command": "${CLAUDE_PROJECT_DIR}/scripts/bootstrap.sh",
             "args": [],
             "timeout": 300
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/fence.sh",
+            "timeout": 10
           }
         ]
       }
