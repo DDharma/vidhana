@@ -39,8 +39,7 @@
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(**/*.pem)",
-      "Edit(./.claude/**)",
-      "Edit(./pipeline/queue.md)"
+      "Edit(./.claude/**)"
     ]
   },
   "hooks": {

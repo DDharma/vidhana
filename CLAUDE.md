@@ -61,7 +61,9 @@ at most four pages, then source. Every wiki claim links its source file; inferen
 
 ## Safety (also enforced by .claude/settings.json)
 - Never git push, merge, force-reset, or delete branches.
-- Never modify .claude/ or pipeline/queue.md. Only the librarian modifies wiki/. Only the designer modifies DESIGN.md.
+- No pipeline agent may modify .claude/ or pipeline/queue.md — the queue is human-owned and is
+  enforced by the PreToolUse fence, not by a blanket deny, so /vidhana-queue can still write it.
+  Only the librarian modifies wiki/. Only the designer modifies DESIGN.md.
 - Write pipeline/state.json after every step so a crashed run can resume.
 
 # gstack

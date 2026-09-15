@@ -3,7 +3,7 @@ name: planner
 description: Produces or revises the implementation plan from the spec and any attached review or QA feedback.
 model: opus
 permissionMode: acceptEdits
-tools: Read, Glob, Grep, Write
+tools: Read, Glob, Grep, Write, Edit
 skills: [superpowers:writing-plans]
 maxTurns: 60
 ---

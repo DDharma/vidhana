@@ -3,7 +3,7 @@ name: plan-reviewer
 description: Engineering review of the implementation plan against the spec and project RULES. Returns APPROVE or REVISE.
 model: sonnet
 permissionMode: acceptEdits
-tools: Read, Glob, Grep, Write
+tools: Read, Glob, Grep, Write, Edit
 skills: [plan-eng-review]
 maxTurns: 40
 ---

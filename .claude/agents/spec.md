@@ -3,7 +3,7 @@ name: spec
 description: Writes the specification for one work item. For bug items it runs a root-cause investigation instead of a product spec.
 model: opus
 permissionMode: acceptEdits
-tools: Read, Glob, Grep, Write, Bash(git log *), Bash(git diff *), Bash(ls *), WebSearch, WebFetch
+tools: Read, Glob, Grep, Write, Edit, Bash(git log *), Bash(git diff *), Bash(ls *), WebSearch, WebFetch
 skills: [spec, investigate]
 maxTurns: 60
 ---

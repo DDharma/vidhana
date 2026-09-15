@@ -3,7 +3,7 @@ name: reviewer
 description: Whole-branch code review of feat/<id> after QA passes. Returns APPROVE or REVISE.
 model: opus
 permissionMode: acceptEdits
-tools: Read, Glob, Grep, Write, Bash(git diff *), Bash(git log *), Bash(git show *)
+tools: Read, Glob, Grep, Write, Edit, Bash(git diff *), Bash(git log *), Bash(git show *)
 skills: [review]
 maxTurns: 80
 ---
